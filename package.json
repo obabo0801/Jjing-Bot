@@ -1,0 +1,24 @@
+{
+  "name": "jjing-bot",
+  "version": "1.0.0",
+  "description": "확장 가능한 디스코드 봇",
+  "homepage": "https://github.com/obabo0801/Jjing-Bot#readme",
+  "bugs": {
+    "url": "https://github.com/obabo0801/Jjing-Bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/obabo0801/Jjing-Bot.git"
+  },
+  "license": "MIT",
+  "author": "unjongjjing",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.26.4",
+    "dotenv": "^17.4.2"
+  }
+}
