@@ -9,5 +9,5 @@ if not exist "node_modules" (
 )
 
 cls
-npm start
+npm start --silent
 pause

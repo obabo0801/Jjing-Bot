@@ -3,7 +3,11 @@ import fs from 'fs';
 import { pathToFileURL } from 'url';
 
 export function get(name) {
-    return path.join(process.cwd(), name);
+    return join(process.cwd(), name);
+}
+
+export function join(...args) {
+    return path.join(...args);
 }
 
 export function exists(name) {

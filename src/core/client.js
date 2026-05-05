@@ -52,7 +52,7 @@ export class JjingBot extends Client {
         });
     }
 
-    register(inst) {
+    #register(inst) {
         inst.commands?.forEach(cmd => {
             this.commands.set(cmd.name, inst);
         });
@@ -66,14 +66,17 @@ export class JjingBot extends Client {
         }
     }
 
-    async loadModules(path) {
-        if (!path) return;
+    async loadScripts(path = '') {
         try {
+            if (!path) {
+                path = this.jjing?.path;
+            }
+
             const js = file.dir(path)
                 .filter(file =>
                 file.endsWith('.js'));
             
-            await this.importModules(js, path);
+            await this.#read(js, path);
         } catch (e) {
             log.error('✖', String(path),
                 MESSAGES.LOAD.NOT_FOUND);
@@ -81,17 +84,25 @@ export class JjingBot extends Client {
         }
     }
 
-    async importModules(files, path) {
+    async reloadScripts(path = '') {
+        await this.loadScripts(path);
+        await this.deployCommands();
+    }
+
+    async #read(files, path) {
         try {
             for (const name of files) {
+                const url = file.url(path, name);
+
                 const mod = await import(
-                    file.url(path, name));
+                    `${url}?v=${Date.now()}`);
 
                 if (!mod.default) continue;
                     
-                this.register(mod.default);
+                this.#register(mod.default);
 
-                log.load('✔', name,
+                log.load('✔',
+                    file.join(path, name),
                     MESSAGES.LOAD.SUCCESS);
             }
         } catch (e) {
@@ -101,15 +112,8 @@ export class JjingBot extends Client {
         }
     }
 
-    async registerCommands() {
+    async deployCommands() {
         try {
-            const rest = new REST({ version: '10' })
-                .setToken(this.jjing?.token);
-
-            const body = [...this.commands.values()]
-                .flatMap(c => c.commands?.map(cmd =>
-                cmd.toJSON()) ?? []);
-
             if (!this.jjing?.clientId) {
                 this.#undefinedClient();
             }
@@ -117,6 +121,16 @@ export class JjingBot extends Client {
             if (!this.jjing?.guildId) {
                 this.#undefinedGuild();
             }
+
+            const rest = new REST(
+                { version: '10' })
+                .setToken(this.jjing?.token);
+
+            const body = [...new Set(
+                this.commands.values())]
+                .flatMap(c =>
+                c.commands?.map(cmd =>
+                cmd.toJSON()) ?? []);
 
             await rest.put(
                 Routes.applicationGuildCommands(
@@ -130,7 +144,6 @@ export class JjingBot extends Client {
                     this.jjing?.clientId
                 ), { body: [] }
             );
-
             log.load(MESSAGES.COMMAND.SUCCESS);
         } catch (e) {
             log.error(MESSAGES.COMMAND.FAIL);
@@ -161,9 +174,9 @@ export class JjingBot extends Client {
 
         this.#printGuild(this.jjing?.guildId);
 
-        await this.loadModules(this.jjing?.path);
+        await this.loadScripts(this.jjing?.path);
 
-        await this.registerCommands();
+        await this.deployCommands();
     }
     
     #printBanner(name) {
