@@ -67,21 +67,22 @@ export class JjingBot extends Client {
     }
 
     async loadScripts(path = '') {
+        let js;
         try {
             if (!path) {
                 path = this.jjing?.path;
             }
 
-            const js = file.dir(path)
+            js = file.dir(path)
                 .filter(file =>
                 file.endsWith('.js'));
-            
-            await this.#read(js, path);
         } catch (e) {
-            log.error('✖', String(path),
+            log.error('❌', String(path),
                 MESSAGES.LOAD.NOT_FOUND);
             handler.error(e);
         }
+        
+        await this.#read(js, path);
     }
 
     async reloadScripts(path = '') {
@@ -90,25 +91,26 @@ export class JjingBot extends Client {
     }
 
     async #read(files, path) {
-        try {
-            for (const name of files) {
+        for (const name of files) {
+            try {
                 const url = file.url(path, name);
 
                 const mod = await import(
                     `${url}?v=${Date.now()}`);
 
                 if (!mod.default) continue;
-                    
+                        
                 this.#register(mod.default);
 
-                log.load('✔',
+                log.load('⭕',
                     file.join(path, name),
                     MESSAGES.LOAD.SUCCESS);
+            } catch (e) {
+                log.error('❌',
+                    file.join(path, name),
+                    MESSAGES.LOAD.FAIL);
+                handler.error(e);
             }
-        } catch (e) {
-            log.error('✖', name,
-                MESSAGES.LOAD.FAIL);
-            handler.error(e);
         }
     }
 
@@ -131,6 +133,8 @@ export class JjingBot extends Client {
                 .flatMap(c =>
                 c.commands?.map(cmd =>
                 cmd.toJSON()) ?? []);
+            
+            this.isDeploy = false;
 
             await rest.put(
                 Routes.applicationGuildCommands(
@@ -144,6 +148,9 @@ export class JjingBot extends Client {
                     this.jjing?.clientId
                 ), { body: [] }
             );
+
+            this.isDeploy = true;
+
             log.load(MESSAGES.COMMAND.SUCCESS);
         } catch (e) {
             log.error(MESSAGES.COMMAND.FAIL);
@@ -205,10 +212,12 @@ export class JjingBot extends Client {
             const guild = await this
                 .guilds.fetch(guildId);
             
-            log.load(MESSAGES.GUILD.SUCCESS);
+            log.load(
+                MESSAGES.GUILD.SUCCESS);
             log.info('🚪', guild.name);
         } catch (e) {
-            log.error(MESSAGES.GUILD.FAIL);
+            log.error(
+                MESSAGES.GUILD.FAIL);
             handler.error(e);
         }
     }
@@ -220,6 +229,11 @@ export class JjingBot extends Client {
 
     async start(retry = 0) {
         try {
+            if (this.isReady()) {
+                return log.warn(
+                    MESSAGES.LOGIN.RUNNING);
+            }
+
             if (!this.jjing?.token) {
                 this.#undefinedToken();
             }
@@ -237,7 +251,8 @@ export class JjingBot extends Client {
     }
 
     #errorStart(error, retry) {
-        log.error(MESSAGES.LOGIN.FAIL);
+        log.error(
+            MESSAGES.LOGIN.FAIL);
         handler.error(error);
 
         if (!this.jjing?.count
@@ -259,5 +274,26 @@ export class JjingBot extends Client {
         setTimeout(() => {
             this.start(retry + 1);
         }, this.jjing?.delay * 1000);
+    }
+
+    async stop() {
+        try {
+            if (!this.isReady()) {
+                return log.warn(
+                    MESSAGES.LOGOUT.STOPPED);
+            }
+            this.commands.clear();
+            this.customIds.clear();
+            this.messages.clear();
+
+            await this.destroy();
+
+            log.load(
+                MESSAGES.LOGOUT.SUCCESS);
+        } catch (e) {
+            log.error(
+                MESSAGES.LOGOUT.FAIL);
+            handler.error(e);
+        }
     }
 }
