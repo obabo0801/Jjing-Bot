@@ -1,0 +1,12 @@
+{
+    "1": {
+        "name": "Jjing Bot 🐕",
+        "path": "src/commands",
+
+        "token": "JJING_TOKEN",
+        "status": "online",
+        
+        "clientId": "1496056100230004756",
+        "guildId": "1355534716626796574"
+    }
+}

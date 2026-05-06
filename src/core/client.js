@@ -66,6 +66,10 @@ export class JjingBot extends Client {
         }
     }
 
+    #getToken() {
+        return process.env[this.jjing?.token];
+    }
+
     async loadScripts(path = '') {
         let js;
         try {
@@ -86,6 +90,14 @@ export class JjingBot extends Client {
     }
 
     async reloadScripts(path = '') {
+        this.#printBanner();
+        this.deploy = true;
+
+        if (!this.isReady()) {
+            return log.warn(
+                MESSAGES.REFRESH.NOT_RUNNING);
+        }
+
         await this.loadScripts(path);
         await this.deployCommands();
     }
@@ -114,6 +126,8 @@ export class JjingBot extends Client {
         }
     }
 
+    isDeploy() { return this.deploy; }
+
     async deployCommands() {
         try {
             if (!this.jjing?.clientId) {
@@ -126,7 +140,7 @@ export class JjingBot extends Client {
 
             const rest = new REST(
                 { version: '10' })
-                .setToken(this.jjing?.token);
+                .setToken(this.#getToken());
 
             const body = [...new Set(
                 this.commands.values())]
@@ -134,7 +148,7 @@ export class JjingBot extends Client {
                 c.commands?.map(cmd =>
                 cmd.toJSON()) ?? []);
             
-            this.isDeploy = false;
+            this.deploy = false;
 
             await rest.put(
                 Routes.applicationGuildCommands(
@@ -149,7 +163,7 @@ export class JjingBot extends Client {
                 ), { body: [] }
             );
 
-            this.isDeploy = true;
+            this.deploy = true;
 
             log.load(MESSAGES.COMMAND.SUCCESS);
         } catch (e) {
@@ -186,21 +200,27 @@ export class JjingBot extends Client {
         await this.deployCommands();
     }
     
-    #printBanner(name) {
+    #printBanner(name = '') {
+        if (!name) {
+            name = this.jjing?.name;
+        }
+
         if (!name) return;
-        console.log('────────────────────')
-        console.log(`${name}`);
-        console.log('────────────────────')
+        log.prompt('')
+        log.prompt('────────────────────')
+        log.prompt(`${name}`);
+        log.prompt('────────────────────')
+    }
+
+    getStarts() {
+        return STATUS[this.user?.presence.status]
+            || STATUS.invisible;
     }
     
     #changeStatus(status) {
         if (!status) return;
-        this.user.setPresence({
-            status});
-
-        log.info(
-            STATUS[this.user.presence.status]
-            || STATUS.unknown);
+        this.user?.setPresence({status});
+        log.info(this.getStarts());
     }
 
     async #printGuild(guildId) {
@@ -230,27 +250,35 @@ export class JjingBot extends Client {
     async start(retry = 0) {
         try {
             if (this.isReady()) {
+                this.#printBanner();
                 return log.warn(
                     MESSAGES.LOGIN.RUNNING);
             }
 
-            if (!this.jjing?.token) {
+            if (!this.#getToken()) {
                 this.#undefinedToken();
             }
 
             await this.login(
-                this.jjing?.token);
+                this.#getToken());
+                
+            this.deploy = false;
         } catch (e) {
-            this.#errorStart(e, retry);
+            this.#printBanner();
+            this.#errorStart(e, retry)
         }
     }
 
     #undefinedToken() {
         throw new Error(
             MESSAGES.LOGIN.TOKEN_UNDEFINED);
-    }
+    }d
 
     #errorStart(error, retry) {
+        return new Promise((resolve) => {
+        
+        this.deploy = false;
+
         log.error(
             MESSAGES.LOGIN.FAIL);
         handler.error(error);
@@ -261,8 +289,11 @@ export class JjingBot extends Client {
         }
 
         if (retry >= this.jjing?.count) {
-            return log.error(
+            this.deploy = true;
+            log.error(
                 MESSAGES.LOGIN.RETRY_LIMIT);
+            resolve(true);
+            return;
         }
 
         log.warn(
@@ -274,14 +305,20 @@ export class JjingBot extends Client {
         setTimeout(() => {
             this.start(retry + 1);
         }, this.jjing?.delay * 1000);
+
+        });
     }
 
     async stop() {
         try {
+            this.#printBanner();
+            this.deploy = true;
+
             if (!this.isReady()) {
                 return log.warn(
                     MESSAGES.LOGOUT.STOPPED);
             }
+            
             this.commands.clear();
             this.customIds.clear();
             this.messages.clear();

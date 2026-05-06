@@ -39,7 +39,6 @@ export function message(client, m) {
                 .trim().split(/\s+/)
                 .shift().toLowerCase();
             const c = client.commands.get(name);
-            log.debug(c);
             if (c?.message) return c.message(m);
         }
     } catch (e) {

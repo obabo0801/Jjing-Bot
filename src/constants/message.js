@@ -1,8 +1,13 @@
 export const MESSAGES = {
 
+    ENV: {
+        SUCCESS: '📄 .env 로드 성공',
+        FAIL: '📄 .env 로드 실패',
+    },
+
     LOGIN: {
         ATTEMPT: '⏰ 로그인을 시도합니다.',
-        RUNNING: '❗ 이미 실행된 상태입니다.',
+        RUNNING: '❗ 이미 실행 중입니다.',
         SUCCESS: '🎮 Discord 로그인 완료',
         FAIL: '🎮 Discord 로그인 실패',
 
@@ -63,6 +68,8 @@ export const MESSAGES = {
 
         SUCCESS: '🔃 새로고침 완료',
         FAIL: '🔃 새로고침 실패',
+
+        NOT_RUNNING: '❗ 서버가 실행 중이 아닙니다.',
     },
 
     SYSTEM: {

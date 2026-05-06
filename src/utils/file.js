@@ -6,6 +6,14 @@ export function get(name) {
     return join(process.cwd(), name);
 }
 
+export function json(name) {
+    const file = read(name);
+
+    if (file) {
+        return JSON.parse(file);
+    }
+}
+
 export function join(...args) {
     return path.join(...args);
 }
