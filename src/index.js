@@ -63,8 +63,9 @@ rl.on('line', async (input) => {
     await handler(cmd);
 });
 
-function initialize() {
-    log.clear();
+function initialize(hide = false) {
+    if (hide) log.clear();
+
     log.prompt('─────────────────────────')
     log.prompt('　Jjing Bot Manager 🐕')
     render(true);
@@ -226,6 +227,10 @@ async function handler(input) {
             log.error(e.message);
             rl.prompt();
         }
+        break;
+    }
+    case 'clear': {
+        await initialize(true);
         break;
     }
     case 'exit': {
