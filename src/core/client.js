@@ -22,19 +22,9 @@ export class JjingBot extends Client {
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.Guilds]});
-    
-        this.jjing = {
-            name: '',
-            path: 'src/commands',
-
-            delay: 5,
-            count: 3,
-        }
-
         this.commands = new Map();
-        this.customIds = new Map();
-        this.messages = new Map();
-
+        this.jjing = {path: 'src/commands',
+                        delay: 5, count: 3}
         this.#initialize();
     }
 
@@ -52,18 +42,12 @@ export class JjingBot extends Client {
         });
     }
 
-    #register(inst) {
-        inst.commands?.forEach(cmd => {
-            this.commands.set(cmd.name, inst);
-        });
+    config(options = {}) {
+        const valid = Object.fromEntries(
+            Object.entries(options)
+            .filter(([_, v]) => v !== undefined));
 
-        inst.customId?.forEach(id => {
-            this.customIds.set(id, inst);
-        });
-
-        if (inst.message) {
-            this.messages.set(inst.name, inst);
-        }
+        Object.assign(this.jjing, valid);
     }
 
     #getToken() {
@@ -98,9 +82,8 @@ export class JjingBot extends Client {
                 MESSAGES.REFRESH.NOT_RUNNING);
         }
 
+        handler.clear();
         this.commands.clear();
-        this.customIds.clear();
-        this.messages.clear();
 
         await this.loadScripts(path);
         await this.deployCommands();
@@ -115,6 +98,8 @@ export class JjingBot extends Client {
                     `${url}?v=${Date.now()}`);
 
                 if (!mod.default) continue;
+
+                mod.default.events?.();
                         
                 this.#register(mod.default);
 
@@ -127,6 +112,56 @@ export class JjingBot extends Client {
                     MESSAGES.LOAD.FAIL);
                 handler.error(e);
             }
+        }
+    }
+
+    #register(m) {
+        m.commands?.forEach(cmd => {
+            this.commands.set(cmd.name, cmd);
+        });
+    }
+
+    async deployCommands() {
+        try {
+            if (!this.jjing?.clientId) {
+                this.#undefinedClient();
+            }
+
+            if (!this.jjing?.guildId) {
+                this.#undefinedGuild();
+            }
+
+            const rest = new REST({ version: '10' })
+                .setToken(this.#getToken());
+            
+            this.deploy = false;
+
+            log.info(MESSAGES.COMMAND.ATTEMPT);
+
+            const body = [...this.commands.values()]
+                .map(cmd => cmd.toJSON());
+
+            await rest.put(
+                Routes.applicationGuildCommands(
+                    this.jjing?.clientId,
+                    this.jjing?.guildId
+                ), { body }
+            );
+            
+            await rest.put(
+                Routes.applicationCommands(
+                    this.jjing?.clientId
+                ), { body: [] }
+            );
+
+            this.deploy = true;
+
+            log.load(MESSAGES.COMMAND.SUCCESS);
+        } catch (e) {
+            this.deploy = true;
+
+            log.error(MESSAGES.COMMAND.FAIL);
+            handler.error(e);
         }
     }
 
@@ -175,93 +210,6 @@ export class JjingBot extends Client {
 
     isDeploy() { return this.deploy; }
 
-    async deployCommands() {
-        try {
-            if (!this.jjing?.clientId) {
-                this.#undefinedClient();
-            }
-
-            if (!this.jjing?.guildId) {
-                this.#undefinedGuild();
-            }
-
-            const rest = new REST({ version: '10' })
-                .setToken(this.#getToken());
-            
-            this.deploy = false;
-
-            log.info(MESSAGES.COMMAND.ATTEMPT);
-
-            const body = [...new Set(
-                this.commands.values())]
-                .flatMap(c =>
-                c.commands?.map(cmd =>
-                cmd.toJSON()) ?? []);
-
-            await rest.put(
-                Routes.applicationGuildCommands(
-                    this.jjing?.clientId,
-                    this.jjing?.guildId
-                ), { body }
-            );
-            
-            await rest.put(
-                Routes.applicationCommands(
-                    this.jjing?.clientId
-                ), { body: [] }
-            );
-
-            this.deploy = true;
-
-            log.load(MESSAGES.COMMAND.SUCCESS);
-        } catch (e) {
-            this.deploy = true;
-
-            log.error(MESSAGES.COMMAND.FAIL);
-            handler.error(e);
-        }
-    }
-
-    #undefinedClient() {
-        throw new Error(
-            MESSAGES.COMMAND.CLIENT_UNDEFINED);
-    }
-
-    config(options = {}) {
-        const valid = Object.fromEntries(
-            Object.entries(options)
-            .filter(([_, v]) => v !== undefined));
-
-        Object.assign(this.jjing, valid);
-    }
-
-    async ready() {
-        this.#printBanner(this.jjing?.name);
-
-        log.load(MESSAGES.LOGIN.SUCCESS);
-        log.info('👤', this.user.tag);
-
-        this.#changeStatus(this.jjing?.status)
-
-        this.#printGuild(this.jjing?.guildId);
-
-        await this.loadScripts(this.jjing?.path);
-
-        await this.deployCommands();
-    }
-    
-    #printBanner(name = '') {
-        if (!name) {
-            name = this.jjing?.name;
-        }
-
-        if (!name) return;
-        log.prompt('')
-        log.prompt('─────────────────────────')
-        log.prompt(`${name}`);
-        log.prompt('─────────────────────────')
-    }
-
     getStatus() {
         return STATUS[this.user?.presence.status]
             || STATUS.invisible;
@@ -292,9 +240,19 @@ export class JjingBot extends Client {
         }
     }
 
-    #undefinedGuild() {
-        throw new Error(
-            MESSAGES.GUILD.GUILD_UNDEFINED);
+    async ready() {
+        this.#printBanner(this.jjing?.name);
+
+        log.load(MESSAGES.LOGIN.SUCCESS);
+        log.info('👤', this.user.tag);
+
+        this.#changeStatus(this.jjing?.status)
+
+        this.#printGuild(this.jjing?.guildId);
+
+        await this.loadScripts(this.jjing?.path);
+
+        await this.deployCommands();
     }
 
     async start(retry = 0) {
@@ -319,10 +277,48 @@ export class JjingBot extends Client {
         }
     }
 
-    #undefinedToken() {
-        throw new Error(
-            MESSAGES.LOGIN.TOKEN_UNDEFINED);
-    }d
+    async stop() {
+        try {
+            this.#printBanner();
+            this.deploy = true;
+
+            if (!this.isReady()) {
+                return log.warn(
+                    MESSAGES.LOGOUT.STOPPED);
+            }
+
+            this.commands.clear();
+            await this.destroy();
+
+            log.load(
+                MESSAGES.LOGOUT.SUCCESS);
+        } catch (e) {
+            log.error(
+                MESSAGES.LOGOUT.FAIL);
+            handler.error(e);
+        }
+    }
+
+    async exit() {
+        try {
+            this.commands.clear();
+            await this.destroy();
+        } catch (e) {
+            handler.error(e);
+        }
+    }
+    
+    #printBanner(name = '') {
+        if (!name) {
+            name = this.jjing?.name;
+        }
+
+        if (!name) return;
+        log.prompt('')
+        log.prompt('─────────────────────────')
+        log.prompt(`${name}`);
+        log.prompt('─────────────────────────')
+    }
 
     #errorStart(error, retry) {
         return new Promise((resolve) => {
@@ -359,40 +355,18 @@ export class JjingBot extends Client {
         });
     }
 
-    async stop() {
-        try {
-            this.#printBanner();
-            this.deploy = true;
-
-            if (!this.isReady()) {
-                return log.warn(
-                    MESSAGES.LOGOUT.STOPPED);
-            }
-
-            this.commands.clear();
-            this.customIds.clear();
-            this.messages.clear();
-
-            await this.destroy();
-
-            log.load(
-                MESSAGES.LOGOUT.SUCCESS);
-        } catch (e) {
-            log.error(
-                MESSAGES.LOGOUT.FAIL);
-            handler.error(e);
-        }
+    #undefinedClient() {
+        throw new Error(
+            MESSAGES.COMMAND.CLIENT_UNDEFINED);
     }
 
-    async exit() {
-        try {
-            this.commands.clear();
-            this.customIds.clear();
-            this.messages.clear();
-            
-            await this.destroy();
-        } catch (e) {
-            handler.error(e);
-        }
+    #undefinedGuild() {
+        throw new Error(
+            MESSAGES.GUILD.GUILD_UNDEFINED);
+    }
+
+    #undefinedToken() {
+        throw new Error(
+            MESSAGES.LOGIN.TOKEN_UNDEFINED);
     }
 }

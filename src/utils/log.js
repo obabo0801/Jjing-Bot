@@ -11,6 +11,16 @@ const LEVELS = Object.freeze({
     ERROR: 'ERROR'
 });
 
+const CONSOLE = Object.freeze({
+    [LEVELS.INPUT]: console.info,
+    [LEVELS.CMD]: console.info,
+    [LEVELS.LOAD]: console.info,
+    [LEVELS.DEBUG]: console.debug,
+    [LEVELS.INFO]: console.info,
+    [LEVELS.WARN]: console.warn,
+    [LEVELS.ERROR]: console.error
+});
+
 const COLORS = Object.freeze({
     INPUT: '\x1b[0m',
     CMD: '\x1b[0m',
@@ -22,21 +32,11 @@ const COLORS = Object.freeze({
     RESET: '\x1b[0m'
 });
 
-const CONSOLE = Object.freeze({
-    [LEVELS.INPUT]: console.info,
-    [LEVELS.CMD]: console.info,
-    [LEVELS.LOAD]: console.info,
-    [LEVELS.DEBUG]: console.debug,
-    [LEVELS.INFO]: console.info,
-    [LEVELS.WARN]: console.warn,
-    [LEVELS.ERROR]: console.error
-});
-
 export function append(level, ...args) {
     const type = String(level).toUpperCase();
     const arg = args
         .map(a => typeof a === 'object' 
-            ? JSON.stringify(a) : String(a))
+        ? stringify(a) : String(a))
         .join(' ');
 
     const data = 
@@ -50,15 +50,15 @@ export function send(level, ...args) {
     const type = String(level).toUpperCase();
     const arg = args
         .map(a => typeof a === 'object' 
-            ? JSON.stringify(a) : String(a))
+        ? stringify(a) : String(a))
         .join(' ');
 
     const data = 
         `[${time.getTime()}] [${type}] ${arg}`;
 
     const l = CONSOLE[type] ?? console.log;
-    const color = COLORS[type] ?? COLORS.RESET;
-    l(`${color}${data}${COLORS.RESET}`);
+    const c = COLORS[type] ?? COLORS.RESET;
+    l(`${c}${data}${COLORS.RESET}`);
 
     return file.append(
         `logs/${time.getDate()}.log`, data);
@@ -68,18 +68,24 @@ export function print(level, ...args) {
     const type = String(level).toUpperCase();
     const arg = args
         .map(a => typeof a === 'object' 
-            ? JSON.stringify(a) : String(a))
+        ? stringify(a) : String(a))
         .join(' ');
 
     const l = CONSOLE[type] ?? console.log;
-    const color = COLORS[type] ?? COLORS.RESET;
-    l(`${color}${arg}${COLORS.RESET}`);
+    const c = COLORS[type] ?? COLORS.RESET;
+    l(`${c}${arg}${COLORS.RESET}`);
 
     return file.append(
         `logs/${time.getDate()}.log`, arg);
 }
 
-export function clear() { console.clear(); }
+function stringify(data) {
+    return JSON.stringify(data, (_, v) =>
+        typeof v === 'bigint'
+         ? v.toString() : v);
+}
+
+export function clear() { console.clear() }
 
 export function input(...args) {
     return append(LEVELS.INPUT, ...args);

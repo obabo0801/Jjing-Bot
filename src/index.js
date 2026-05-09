@@ -376,7 +376,7 @@ async function delay(client) {
         setTimeout(check, 1000);
     }
 
-    setTimeout(check, 1000);
+    check();
 
     });
 }
