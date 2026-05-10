@@ -23,7 +23,7 @@
     "googleapis": "^171.4.0"
   },
   "imports": {
-    "#message": "./src/locals/language.js",
+    "#i18n": "./src/locals/index.js",
 
     "#discord": "./src/discord/client.js",
     "#handler": "./src/discord/handler.js",

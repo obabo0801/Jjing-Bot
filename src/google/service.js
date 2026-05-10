@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 
-import { MESSAGES } from '#message';
+import { MESSAGES } from '#i18n';
 import { error } from '#handler';
 
 import * as log from '#log';

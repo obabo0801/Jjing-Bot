@@ -2,9 +2,8 @@ import {
     Client, GatewayIntentBits, REST, Routes
 } from 'discord.js';
 
-import { MESSAGES } from '#message'
+import { MESSAGES } from '#i18n'
 import * as handler from '#handler';
-
 import * as file from '#file';
 import * as log from '#log';
 

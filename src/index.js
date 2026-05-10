@@ -1,7 +1,7 @@
 import { config, parse } from 'dotenv';
 import readline from 'readline';
 
-import { MESSAGES, setLanguage } from '#message';
+import { MESSAGES, setLanguage } from '#i18n';
 import { DiscordBot } from '#discord';
 import { GoogleService } from '#google';
 import { error } from '#handler';

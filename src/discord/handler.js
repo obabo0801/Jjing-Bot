@@ -1,4 +1,4 @@
-import { MESSAGES } from '#message'
+import { MESSAGES } from '#i18n'
 import * as log from '#log';
 
 const handlers = [];
