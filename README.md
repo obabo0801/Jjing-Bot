@@ -35,7 +35,7 @@ CLI 기반 제어 시스템과 Google Sheets 연동까지
 ### 📊 Google 시스템
 - Google Sheets API 연동
 - 서비스 계정 기반 인증
-- 다중 계정 지원 구조
+- 다중 계정 지원
 ### 🛠 시스템 구조
 - CLI 명령어 제어
 - 명령어 자동 로드
