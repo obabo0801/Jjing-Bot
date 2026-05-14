@@ -1,7 +1,6 @@
 import readline from 'readline';
 import * as log from '#log';
 import { locales, MESSAGES } from '#i18n';
-import { exit } from 'process';
 
 let services = [];
 
@@ -10,8 +9,29 @@ const rl = readline.createInterface({
     output: process.stdout,
     prompt: ''});
 
-async function selectMenu(all, single, target) {
-    log.prompt('───────────────────────────────────────\n');
+rl.on('line', async (input) => {
+    const cmd = input.trim();
+    await handler(cmd);
+});
+
+export async function initialize() {
+    log.prompt('\n───────────────────────────────────────\n')
+    await infoAll(services); await showAll(services);
+    log.prompt('\n───────────────────────────────────────')
+    log.prompt(MESSAGES.CLI.COMMAND);
+    log.prompt(format(MESSAGES.CLI.COMMANDS));
+    log.prompt('───────────────────────────────────────')
+}
+
+function format(commands, column = 7, rows = []) {
+    const values = Object.values(commands);
+    for (let i = 0; i < values.length; i += column) {
+        rows.push(values.slice(i, i + column).join(' '));
+    }; return rows.join('\n');
+}
+
+async function selectMenu(all, single, index, target) {
+    log.prompt('\n───────────────────────────────────────\n');
     for (const [id, item] of target.ref.get().entries()) {
         log.prompt(await target.ref.info(id, true));
     }
@@ -19,15 +39,13 @@ async function selectMenu(all, single, target) {
     const input = await ask(resolve => {
         rl.question('', resolve);
     });
-    const [i1, ...i2] = input.split(' ');
-    const index = Number(i1);
-    const args = [...new Set(i2.map(Number))];
-
+    const [...i1] = input.split(' ');
+    const args = [...new Set(i1.map(Number))];
     await service(all, single, index, ...args);
 }
 
-async function select(all, single) {
-    log.prompt('───────────────────────────────────────\n')
+async function selectService(all, single) {
+    log.prompt('\n───────────────────────────────────────\n')
     await showAll(services);
     log.prompt('\n───────────────────────────────────────')
     const input = await ask(resolve => {
@@ -36,19 +54,19 @@ async function select(all, single) {
     const [i1, ...i2] = input.split(' ');
     const index = Number(i1);
     const args = [...new Set(i2.map(Number))];
-
-    if (index === 0) {
-        await service(all, single, index, ...args);
-    }
-
     const target = services[index];
     if (!target) return;
-    selectMenu(all, single, target);
+    log.cmd(MESSAGES.CLI[target.name]);
+    if (index === 0) {
+        await service(all, single, index, ...args);
+        return;
+    }
+    await selectMenu(all, single, index, target);
 }
 
 async function service(all, single, index, ...args) {
     if (Number.isNaN(index)) {
-        await select(all, single);
+        await selectService(all, single);
         return;
     }
     if (index === 0) {
@@ -120,7 +138,7 @@ async function handler(input) {
 
     case locales.en.CLI.COMMANDS.EXIT:
     case locales.ko.CLI.COMMANDS.EXIT: {
-        shutdown();
+        await shutdown();
         break;
     }
 
@@ -130,10 +148,17 @@ async function handler(input) {
     }
 }
 
-rl.on('line', async (input) => {
-    const cmd = input.trim();
-    await handler(cmd);
-});
+async function infoAll(items) {
+    for (const [id, item] of items.entries()) {
+        if (!item.ref) continue;
+        log.prompt(MESSAGES.CLI[item.name]);
+        log.prompt('───────────────────────────────────────\n')
+        for (const [id] of item.ref.get().entries()) {
+            log.prompt(await item.ref.info(id, true));
+        }
+        log.prompt('\n───────────────────────────────────────\n')
+    }
+}
 
 async function showAll(items) {
     for (const [id, item] of items.entries()) {
@@ -143,22 +168,17 @@ async function showAll(items) {
     }
 }
 
-export async function start(items) {
-    services = items;
-
-    log.prompt('───────────────────────────────────────\n')
-    await showAll(services);
-    log.prompt('\n───────────────────────────────────────')
-    log.prompt(MESSAGES.CLI.COMMAND);
-    log.prompt(format(MESSAGES.CLI.COMMANDS));
-    log.prompt('───────────────────────────────────────')
+export async function setup(items) {
+    for (const [id, item] of items.entries()) {
+        if (!item.ref) continue;
+        await item.ref.setup();
+    }
 }
 
-function format(commands, column = 7, rows = []) {
-    const values = Object.values(commands);
-    for (let i = 0; i < values.length; i += column) {
-        rows.push(values.slice(i, i + column).join(' '));
-    }; return rows.join('\n');
+export async function start(items) {
+    services = items;
+    await setup(items);
+    await initialize();
 }
 
 export function prompt() {
@@ -182,9 +202,11 @@ export function ask(resolve) {
     return new Promise(resolve);
 }
 
-export function shutdown() {
+export async function shutdown() {
     log.cmd(MESSAGES.SYSTEM.QUIT);
-    process.exit(0);
+    for (const service of services) {
+        await service.ref?.exitAll?.();
+    }; close(); process.exit(0);
 }
 
 process.on('uncaughtException', (err) => {

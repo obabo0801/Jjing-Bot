@@ -117,6 +117,7 @@ export const MESSAGES = {
         ERROR401: '❌ Unauthorized (401)',
         ERROR403: '❌ Forbidden (403)',
         ERROR404: '❌ Data not found (404)',
+        ERROR423: '❌ Request failed (423)',
         ERROR500: '❌ Server error (500)',
 
         NOT_RUNNING: '❗ Sheet not running',

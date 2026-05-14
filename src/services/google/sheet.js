@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { EventEmitter } from 'events';
 import { MESSAGES } from '#i18n';
+import * as handler from '#handler';
 import * as log from '#log';
 
 export class GoogleSheet extends EventEmitter {
@@ -42,14 +43,13 @@ export class GoogleSheet extends EventEmitter {
             if (sheet.ok) {
                 log.load(MESSAGES.SHEET.IN_SUCCESS);
             } else {
-                log.error(MESSAGES.SHEET.IN_FAIL);
-                this.error(sheet.error);
+                this.#undefinedSheet();
             }
             await this.emit('start');
             return true;
         } catch (e) {
             log.error(MESSAGES.AUTH.FAIL);
-            this.error(e)
+            handler.error(e)
             this.emit('start');
             return false;
         }
@@ -64,9 +64,10 @@ export class GoogleSheet extends EventEmitter {
         try {
             let sheet = await this.isReady();
             if (skip) {
-                if (!sheet.ok)
+                if (!sheet.ok) {
                     this.emit('stop');
                     return false;
+                }
                 this.clear();
                 this.emit('stop');
                 return true;
@@ -83,7 +84,7 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.load(MESSAGES.SHEET.OUT_FAIL);
-            this.error(e);
+            handler.error(e);
             this.emit('stop');
             return false;
         }
@@ -111,7 +112,7 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.error(MESSAGES.STATUS.FAIL);
-            this.error(e);
+            handler.error(e);
             this.emit('status');
             return false;
         }
@@ -136,7 +137,7 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.error(MESSAGES.REFRESH.FAIL);
-            this.error(e);
+            handler.error(e);
             this.emit('stop');
             return false;
         }
@@ -221,7 +222,7 @@ export class GoogleSheet extends EventEmitter {
             });
             this.clear(range);
         } catch (e) {
-            this.error(e);
+            handler.error(e);
         }
     }
 
@@ -269,7 +270,7 @@ export class GoogleSheet extends EventEmitter {
                 requestBody: {values: [values]}
             });
         } catch (e) {
-            this.error(e)
+            handler.error(e)
         }
     }
 
@@ -306,8 +307,7 @@ export class GoogleSheet extends EventEmitter {
 
     #printBanner(name = this.getName()) {
         if (!name) return;
-        log.prompt('')
-        log.prompt('───────────────────────────────────────')
+        log.prompt('\n───────────────────────────────────────')
         log.prompt(`${name}`);
         log.prompt('───────────────────────────────────────')
     }
@@ -318,18 +318,22 @@ export class GoogleSheet extends EventEmitter {
             [401, MESSAGES.SHEET.ERROR401],
             [403, MESSAGES.SHEET.ERROR403],
             [404, MESSAGES.SHEET.ERROR404],
+            [423, MESSAGES.SHEET.ERROR423],
             [500, MESSAGES.SHEET.ERROR500],
         ];
         for (const [code, message] of errors) {
             if (error?.code === 500) {
-                log.error(message);
                 this.restart();
                 return;
             }
-            if (error?.code === code) {
-                log.error(message);
+            if (error?.code === 423) {
+                this.restart();
                 return;
             }
         }
+    }
+
+    #undefinedSheet() {
+        throw new Error(MESSAGES.SHEET.IN_FAIL);
     }
 }

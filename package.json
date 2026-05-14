@@ -24,10 +24,18 @@
     "soop-extension": "^1.3.3"
   },
   "imports": {
+    "#cli": "./src/core/cli.js",
+    "#env": "./src/core/env.js",
+    
     "#i18n": "./src/locals/index.js",
-    "#discord": "./src/services/discord/client.js",
+    
+    "#discord": "./src/services/discord/index.js",
+    "#client": "./src/services/discord/client.js",
     "#handler": "./src/services/discord/handler.js",
-    "#google": "./src/services/google/sheet.js",
+
+    "#google": "./src/services/google/index.js",
+    "#sheet": "./src/services/google/sheet.js",
+
     "#base64": "./src/utils/base64.js",
     "#file": "./src/utils/file.js",
     "#log": "./src/utils/log.js",

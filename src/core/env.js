@@ -3,6 +3,7 @@ import * as file from '#file';
 import * as log from '#log';
 import { decode } from '#base64';
 import { setLanguage, MESSAGES } from '#i18n';
+import * as handler from '#handler';
 
 export function parseEnv(name, show = true) {
     try {
@@ -31,7 +32,7 @@ export function parseEnv(name, show = true) {
     } catch (e) {
         if (show) {
             log.error(MESSAGES.ENV.FAIL);
-            error(e);
+            handler.error(e);
         }
     }
 }

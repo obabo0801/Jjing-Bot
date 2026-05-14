@@ -27,6 +27,7 @@ CLI 기반 제어 시스템과 Google Sheets 연동까지
 ## ✨ 기능
 ### 🎮 Discord 시스템
 - 슬래시 명령어
+- 메시지 명령어
 - 버튼 이벤트
 - 셀렉트 메뉴
 - 모달 처리
@@ -77,11 +78,12 @@ start.bat
 ## 🔐 .env
 - ⚠️ **절대 공개 금지**
 ### 시작
-- -1 CLI 바로 실행
+- -1 로드 없이 진행
 - 0 전체 불러오기
 - 1 [1] 번 불러오기
 ```env
-START=0
+DISCORD_START=0
+GOOGLE_START=0
 ```
 ### 언어
 - en 영어
@@ -93,6 +95,16 @@ LANGUAGE=ko
 - config 설정 → `token`
 ```env
 JJING_TOKEN=YOUR_TOKEN
+```
+### 클라이언트 ID
+- config 설정 → `clientId`
+```env
+JJING_CLIENT_ID=YOUR_CLIENT_ID
+```
+### 길드 ID
+- config 설정 → `guildId`
+```env
+JJING_GUILD_ID=YOUR_GUILD_ID
 ```
 ### 구글 시트 ID
 - /spreadsheets/d/YOUR_ID/edit#gid=0
@@ -122,7 +134,7 @@ GOOGLE_FUND_EMAIL=YOUR_EMAIL
 🔹 `delay` 시간
 🔹 `count` 횟수  
 🔹 `token` `.env` 봇 토큰  
-  🔸 `"token"`: `"JJING_BOT"`  
+  🔸 `"token"`: `"JJING_TOKEN"`  
   
 🔹 `status` 봇 상태  
   🟢 `online` 온라인
@@ -131,7 +143,10 @@ GOOGLE_FUND_EMAIL=YOUR_EMAIL
   ⚫ `invisible` 오프라인  
   
 🔹 `clientId` [클라이언트 ID](https://discord.com/developers/applications)  
+  🔸 `"clientId"`: `"JJING_CLIENT_ID"`  
+
 🔹 `guildId` [길드 ID](https://support-dev.discord.com/hc/ko/articles/360028717192)  
+  🔸 `"guildId"`: `"JJING_GUILD_ID"`  
 
 ### 📊 구글
 🔹 `name` 시트 이름  
@@ -143,5 +158,16 @@ GOOGLE_FUND_EMAIL=YOUR_EMAIL
 
 🔹 `email` [서비스 계정 이메일](https://docs.cloud.google.com/iam/docs/service-account-types)  
   🔸 `"email"`: `"GOOGLE_FUND_EMAIL"`  
+
+---
+
+## ⌨️ CLI 명령어
+- `start` 시작
+- `restart` 재시작
+- `stop` 중지
+- `status` 상태
+- `refresh` 새로고침
+- `clear` 정리
+- `exit` 종료
 
 ---

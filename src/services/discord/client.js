@@ -234,12 +234,10 @@ export class DiscordBot extends Client {
             }
             const guild = await this
                 .guilds.fetch(guildId);
-            log.load(
-                MESSAGES.GUILD.SUCCESS);
+            log.load(MESSAGES.GUILD.SUCCESS);
             log.info('🚪', guild.name);
         } catch (e) {
-            log.error(
-                MESSAGES.GUILD.FAIL);
+            log.error(MESSAGES.GUILD.FAIL);
             handler.error(e);
         }
     }
@@ -366,7 +364,7 @@ export class DiscordBot extends Client {
             return true;
         } catch (e) {
             log.error(MESSAGES.REFRESH.FAIL);
-            this.error(e);
+            handler.error(e);
             this.emit('refresh');
             return false;
         }
@@ -375,8 +373,7 @@ export class DiscordBot extends Client {
     
     #printBanner(name = this.getName()) {
         if (!name) return;
-        log.prompt('')
-        log.prompt('───────────────────────────────────────')
+        log.prompt('\n───────────────────────────────────────')
         log.prompt(`${name}`);
         log.prompt('───────────────────────────────────────')
     }

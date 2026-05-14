@@ -1,8 +1,7 @@
-import { DiscordBot } from '#discord';
+import { DiscordBot } from '#client';
 import * as file from '#file';
 
-export let bots = new Map();
-export const get = () => bots;
+const bots = new Map();
 
 export async function setup() {
     config('config.json');
@@ -11,6 +10,8 @@ export async function setup() {
     if (!bots.get(i)) return;
     await start(i);
 }
+
+export const get = () => bots;
 
 export function config(name) {
     bots.clear();

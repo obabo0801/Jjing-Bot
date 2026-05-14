@@ -1,8 +1,7 @@
-import { GoogleSheet } from '#google';
+import { GoogleSheet } from '#sheet';
 import * as file from '#file';
 
-export let sheets = new Map();
-export const get = () => sheets;
+const sheets = new Map();
 
 export async function setup() {
     config('config.json');
@@ -11,6 +10,8 @@ export async function setup() {
     if (!sheets.get(i)) return;
     await start(i);
 }
+
+export const get = () => sheets;
 
 export function config(name) {
     sheets.clear();
@@ -127,7 +128,7 @@ export function ask(resolve) {
 
 export function index() {
     const str = process
-        .env.DISCORD_START;
+        .env.GOOGLE_START;
     if (!str) return 0;
     const num = Number(str);
     return isNaN(
