@@ -3,8 +3,8 @@
 </h1>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d729fe26-8766-4d46-8d41-93abb457e0eb" width="49%">
-  <img src="https://github.com/user-attachments/assets/ac2f4d93-8fd0-46ed-84e5-92b4aa68d79d" width="49%">
+  <img src="https://github.com/user-attachments/assets/ed957996-9b38-4afa-bf1b-5e43ff4fc8b4" width="49%">
+  <img src="https://github.com/user-attachments/assets/e7f9cbc2-b1d3-45eb-b670-8b7099b0e4ab" width="49%">
 </p>
 
 <p align="center">
@@ -168,6 +168,28 @@ GOOGLE_FUND_EMAIL=YOUR_EMAIL
 - `status` 상태
 - `refresh` 새로고침
 - `clear` 정리
+- `reboot` 재실행
 - `exit` 종료
 
 ---
+
+### 사용 예시
+```bash
+start
+```
+서비스 선택 메뉴를 표시합니다.
+
+```bash
+start 1
+```
+1번 서비스 전체를 시작합니다.
+
+```bash
+start 1 1
+```
+1번 서비스의 1번 항목만 시작합니다.
+
+```bash
+start 0
+```
+전체 서비스를 시작합니다.
