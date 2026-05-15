@@ -7,7 +7,7 @@ import * as handler from '#handler';
 
 export function parseEnv(name, show = true) {
     try {
-        const path = file.find('.env');
+        const path = file.find(name);
         if (!path) return;
 
         const env = file.read(path);

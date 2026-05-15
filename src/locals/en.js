@@ -150,7 +150,7 @@ export const MESSAGES = {
         EMPTY: '❗ No services available',
 
         CANCEL: '📍 Selection cancelled',
-        INVALID: '❗Invalid selection',
+        INVALID: '❗ Invalid selection',
         DONE: '📋 Command completed',
         
         UNKNOWN: 'is not a valid command',

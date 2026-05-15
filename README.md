@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-확장 가능한 디스코드 봇
+Discord Bots & Google Sheets CLI Manager
 <br>
 Node.js + discord.js + googleapis
 </p>
@@ -16,11 +16,11 @@ Node.js + discord.js + googleapis
 ---
 
 ## 📌 소개
-Jjing Manager는 Discord Bot 기능을 중심으로  
-CLI 기반 제어 시스템과 Google Sheets 연동까지  
-포함한 멀티 서비스 관리 프로젝트입니다.  
+Jjing Manager는 Discord bots 와 Google sheets 를 CLI 으로  
+제어할 수 있는 멀티 서비스 관리 프로젝트입니다.  
 
-환경 변수 설정으로 다국어(i18n)도 지원합니다.  
+환경 변수와 Config 설정을 통해 여러 서비스를 관리할 수 있으며  
+다국어(i18n)도 지원합니다.  
 
 ---
 

@@ -6,7 +6,7 @@ export const locales = {
     ko : ko.MESSAGES
 }
 
-export let MESSAGES = en;
+export let MESSAGES = locales.en;
 
 export function getLanguage() {
     return MESSAGES || locales.en;

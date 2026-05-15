@@ -101,8 +101,8 @@ function showMenu(items) {
 
     showZero();
 
-    for (const { key, value } of selected) {
-        log.prompt(`${key + 1}.`, name(value));
+    for (let i = 0; i < selected.length; i++) {
+        log.prompt(`${i + 1}.`, name(selected[i].value));
     }
 }
 
@@ -332,8 +332,7 @@ async function handler(input) {
 }
 
 function select(index) {
-    const selected = indexMenu(
-        services)[index - 1];
+    const selected = indexMenu(services)[index - 1];
     return selected?.value;
 }
 
