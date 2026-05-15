@@ -20,6 +20,7 @@ export const MESSAGES = {
             STATUS: '상태',
             REFRESH: '새로고침',
             CLEAR: '정리',
+            REBOOT: '재실행',
             EXIT: '종료'
         },
 
@@ -147,6 +148,12 @@ export const MESSAGES = {
     },
 
     SYSTEM: {
+        EMPTY: '❗ 실행 가능한 서비스가 없습니다.',
+        
+        CANCEL: '📍 선택이 취소되었습니다.',
+        INVALID: '❗ 잘못된 선택입니다.',
+        DONE: '📋 명령이 완료되었습니다.',
+
         UNKNOWN: '은(는) 존재하지 않는 명령어입니다.',
 
         QUIT: '😢 프로그램을 종료합니다.',

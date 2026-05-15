@@ -49,8 +49,8 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.error(MESSAGES.AUTH.FAIL);
-            handler.error(e)
-            this.emit('start');
+            await this.#handleError(e);
+            await this.emit('start');
             return false;
         }
     }
@@ -84,8 +84,8 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.load(MESSAGES.SHEET.OUT_FAIL);
-            handler.error(e);
-            this.emit('stop');
+            await this.#handleError(e);
+            await this.emit('stop');
             return false;
         }
     }
@@ -112,8 +112,8 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.error(MESSAGES.STATUS.FAIL);
-            handler.error(e);
-            this.emit('status');
+            await this.#handleError(e, { show: false });
+            await this.emit('status');
             return false;
         }
     }
@@ -137,8 +137,8 @@ export class GoogleSheet extends EventEmitter {
             return true;
         } catch (e) {
             log.error(MESSAGES.REFRESH.FAIL);
-            handler.error(e);
-            this.emit('stop');
+            await this.#handleError(e, { show: false });
+            await this.emit('stop');
             return false;
         }
     }
@@ -193,7 +193,7 @@ export class GoogleSheet extends EventEmitter {
     async get(range, { value = 'FORMATTED_VALUE', cache = true } = {}) {
         const key = `${range}:${value}`;
         const cached = this.cache.get(key);
-        if (cache && cached && Date.now() - cached.time < 5000) {
+        if (cache && cached && Date.now() - cached.time < 50000) {
             return cached.data.map(row => [...row]);
         }
         try {
@@ -202,13 +202,14 @@ export class GoogleSheet extends EventEmitter {
                 range,
                 valueRenderOption: value
             });
-            const values = data.values;
+            const values = data.values ?? [];
             if (cache) {
                 this.cache.set(key, { time: Date.now(), data: values });
             }
-            return values;
+            return values.map(row => [...row]);
         } catch (e) {
-            return null;
+            await this.#handleError(e, { show: false });
+            return [];
         }
     }
 
@@ -222,7 +223,7 @@ export class GoogleSheet extends EventEmitter {
             });
             this.clear(range);
         } catch (e) {
-            handler.error(e);
+            await this.#handleError(e, { show: false });
         }
     }
 
@@ -270,7 +271,7 @@ export class GoogleSheet extends EventEmitter {
                 requestBody: {values: [values]}
             });
         } catch (e) {
-            handler.error(e)
+            await this.#handleError(e, { show: false });
         }
     }
 
@@ -283,7 +284,7 @@ export class GoogleSheet extends EventEmitter {
                 requestBody: {values: [values]}
             });
         } catch (e) {
-            this.error(e)
+            await this.#handleError(e, { show: false });
         }
     }
 
@@ -312,24 +313,10 @@ export class GoogleSheet extends EventEmitter {
         log.prompt('───────────────────────────────────────')
     }
 
-    error(error) {
-        const errors = [
-            [400, MESSAGES.SHEET.ERROR400],
-            [401, MESSAGES.SHEET.ERROR401],
-            [403, MESSAGES.SHEET.ERROR403],
-            [404, MESSAGES.SHEET.ERROR404],
-            [423, MESSAGES.SHEET.ERROR423],
-            [500, MESSAGES.SHEET.ERROR500],
-        ];
-        for (const [code, message] of errors) {
-            if (error?.code === 500) {
-                this.restart();
-                return;
-            }
-            if (error?.code === 423) {
-                this.restart();
-                return;
-            }
+    async #handleError(e, { restart = true, show = true } = {}) {
+        if (show) handler.error(e);
+        if (restart && (e?.code === 423 || e?.code === 500)) {
+            await this.restart();
         }
     }
 

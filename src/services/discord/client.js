@@ -269,8 +269,8 @@ export class DiscordBot extends Client {
             return true;
         } catch (e) {
             this.#printBanner();
-            this.#errorStart(e, retry)
-            this.emit('start');
+            await this.#errorStart(e, retry);
+            await this.emit('start');
             return false;
         }
     }
@@ -283,9 +283,10 @@ export class DiscordBot extends Client {
     async stop(skip = false) {
         try {
             if (skip) {
-                if (!this.isReady())
+                if (!this.isReady()) {
                     this.emit('stop');
                     return false;
+                }
                 this.commands.clear();
                 await this.destroy();
                 await this.emit('stop');

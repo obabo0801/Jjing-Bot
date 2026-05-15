@@ -1,91 +1,255 @@
 import readline from 'readline';
+import { config } from 'dotenv';
+import { parseEnv } from '#env';
 import * as log from '#log';
 import { locales, MESSAGES } from '#i18n';
+import { spawn } from 'child_process';
 
 let services = [];
+
+const LINE = '───────────────────────────────────────';
+
+const TITLE = `
+   ▄▄▄    ▄▄▄  ▄▄▄▄▄  ▄▄   ▄   ▄▄▄ 
+     █      █    █    █▀▄  █ ▄▀   ▀
+     █      █    █    █ █▄ █ █   ▄▄
+     █      █    █    █  █ █ █    █
+ ▀▄▄▄▀  ▀▄▄▄▀  ▄▄█▄▄  █   ██  ▀▄▄▄▀ 🐕`;
 
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     prompt: ''});
 
-rl.on('line', async (input) => {
-    const cmd = input.trim();
-    await handler(cmd);
-});
+export async function start(items) {
+    services = items;
+    config({ quiet: true });
+    showTitle();
+    pause();
+    await setup(services);
+    await initialize(false);
+    prompt();
+}
 
-export async function initialize() {
-    log.prompt('\n───────────────────────────────────────\n')
-    await infoAll(services); await showAll(services);
-    log.prompt('\n───────────────────────────────────────')
+export async function reload(items) {
+    parseEnv('.env', false);
+    for (const [id, item] of items.entries()) {
+        if (!item.ref) continue;
+        await item.ref.reload();
+    }
+}
+
+export async function setup(items) {
+    parseEnv('.env', false);
+    for (const [id, item] of items.entries()) {
+        if (!item.ref) continue;
+        await item.ref.setup();
+    }
+}
+
+export async function reboot() {
+    const child = spawn(
+        'npm start --silent', {
+        detached: true,
+        stdio: 'inherit',
+        shell: true});
+    child.unref();
+    await shutdown();
+}
+
+export async function initialize(title = true) {
+    if (title) {
+        showTitle();
+    }
+    await showInfo(services);
+    showMenu(services);
+    showHelp();
+}
+
+function showTitle() {
+    log.title(TITLE);
+}
+
+async function showInfo(items, zero = false) {
+    const selected = items.filter(hasList);
+    if (selected.length === 0) return;
+
+    showLine();
+
+    for (const item of selected) {
+        log.prompt(name(item));
+        showLine();
+
+        if (zero) showZero();
+
+        for (const { key } of indexInfo(item)) {
+            log.prompt(await item.ref.info(key, true));
+        }
+
+        showLine();
+    }
+}
+
+function indexInfo(item) {
+    return [...item.ref.get().entries()].map(
+        ([key, value]) => ({ key, value }));
+}
+
+function showMenu(items) {
+    const selected = indexMenu(items);
+    if (selected.length === 0) return;
+
+    showZero();
+
+    for (const { key, value } of selected) {
+        log.prompt(`${key + 1}.`, name(value));
+    }
+}
+
+function indexMenu(items) {
+    return items.map(
+        (value, key) => ({ key, value }))
+        .filter(
+        ({ value }) => value.ref && hasList(value));
+}
+
+function showHelp() {
+    showLine();
     log.prompt(MESSAGES.CLI.COMMAND);
     log.prompt(format(MESSAGES.CLI.COMMANDS));
-    log.prompt('───────────────────────────────────────')
+    showLine();
 }
 
-function format(commands, column = 7, rows = []) {
-    const values = Object.values(commands);
-    for (let i = 0; i < values.length; i += column) {
-        rows.push(values.slice(i, i + column).join(' '));
-    }; return rows.join('\n');
+function showZero() {
+    log.prompt(`0. ${MESSAGES.CLI.ALL}`);
 }
 
-async function selectMenu(all, single, index, target) {
-    log.prompt('\n───────────────────────────────────────\n');
-    for (const [id, item] of target.ref.get().entries()) {
-        log.prompt(await target.ref.info(id, true));
+function showLine() {
+    log.prompt(LINE);
+}
+
+function name(item) {
+    return MESSAGES.CLI[item.name] ?? item.name;
+}
+
+function format(commands, col = 6, rows = []) {
+    const v = Object.values(commands);
+    for (let i = 0; i < v.length; i += col) {
+        rows.push(v.slice(i, i + col).join(' '));
     }
-    log.prompt('\n───────────────────────────────────────')
-    const input = await ask(resolve => {
-        rl.question('', resolve);
-    });
-    const [...i1] = input.split(' ');
-    const args = [...new Set(i1.map(Number))];
-    await service(all, single, index, ...args);
+    return rows.join('\n');
 }
 
-async function selectService(all, single) {
-    log.prompt('\n───────────────────────────────────────\n')
-    await showAll(services);
-    log.prompt('\n───────────────────────────────────────')
-    const input = await ask(resolve => {
+function list(item) {
+    return item.ref?.get?.();
+}
+
+function hasList(item) {
+    return list(item)?.size > 0;
+}
+
+function hasService() {
+    return services.some(item =>
+        item.ref && hasList(item));
+}
+
+async function selectMenu(all, single) {
+    showLine();
+    await showMenu(services);
+    showLine();
+    const input = await wait(resolve => {
         rl.question('', resolve);
     });
-    const [i1, ...i2] = input.split(' ');
+    pause();
+    const [i1, ...i2] = input.split(/\s+/);
     const index = Number(i1);
     const args = [...new Set(i2.map(Number))];
-    const target = services[index];
-    if (!target) return;
-    log.cmd(MESSAGES.CLI[target.name]);
+    const target = select(index);
+    if (Number.isNaN(index)) {
+        await invalid();
+        return;
+    }
     if (index === 0) {
+        await service(all, single, 0);
+        return;
+    }
+    if (!target) {
+        await cancel();
+        return;
+    }
+    log.cmd(name(target));
+    if (args.length > 0) {
         await service(all, single, index, ...args);
         return;
     }
-    await selectMenu(all, single, index, target);
+    await selectInfo(all, single, index, target);
+}
+
+async function selectInfo(all, single, index, target) {
+    showLine();
+    await showInfo([target], true);
+    const input = await wait(resolve => {
+        rl.question('', resolve);
+    });
+    pause();
+    const args = [...new Set(
+        input.split(/\s+/).map(Number))];
+    if (args.length === 0) {
+        await invalid();
+        return;
+    }
+    await service(all, single, index, ...args);
 }
 
 async function service(all, single, index, ...args) {
-    if (Number.isNaN(index)) {
-        await selectService(all, single);
+    if (!hasService()) {
+        log.warn(MESSAGES.SYSTEM.EMPTY);
+        await setup(services);
+        if (hasService()) {
+            await initialize();
+        }
         return;
     }
+    if (Number.isNaN(index)) {
+        await selectMenu(all, single);
+        return;
+    }
+    pause();
     if (index === 0) {
         for (const service of services) {
             const ref = service.ref;
             if (!ref?.[all]) continue;
             await ref[all]();
         }
-    }
-    const target = services[index];
-    if (!target) return;
-    if (args.length === 0) {
-        await target.ref?.[all]?.();
+        await done();
         return;
     }
-    for (const arg of args) {
-        if (Number.isNaN(arg)) continue;
+    const target = select(index);
+    if (!target?.ref) {
+        await invalid();
+        return;
+    }
+    if (args.length === 0 || args.includes(0)) {
+        await target.ref?.[all]?.();
+        await done();
+        return;
+    }
+    const valid = validate(target, args);
+    if (valid.length === 0) {
+        await cancel();
+        return;
+    }
+    for (const arg of valid) {
         await target.ref?.[single]?.(arg);
     }
+    await done();
+}
+
+function validate(target, args) {
+    const keys = [...target.ref.get().keys()];
+    return args
+        .filter(arg => !Number.isNaN(arg))
+        .filter(arg => keys.includes(arg));
 }
 
 async function handler(input) {
@@ -97,35 +261,45 @@ async function handler(input) {
 
     case locales.en.CLI.COMMANDS.START:
     case locales.ko.CLI.COMMANDS.START: {
-        log.cmd(MESSAGES.LOGIN.ATTEMPT);
+        if (hasService()) {
+            log.cmd(MESSAGES.LOGIN.ATTEMPT);
+        }
         await service('startAll', 'start', index, ...args);
         break;
     }
 
     case locales.en.CLI.COMMANDS.RESTART:
     case locales.ko.CLI.COMMANDS.RESTART: {
-        log.cmd(MESSAGES.LOGIN.RESTART);
+        if (hasService()) {
+            log.cmd(MESSAGES.LOGIN.RESTART);
+        }
         await service('restartAll', 'restart', index, ...args);
         break;
     }
 
     case locales.en.CLI.COMMANDS.STOP:
     case locales.ko.CLI.COMMANDS.STOP: {
-        log.cmd(MESSAGES.LOGOUT.ATTEMPT);
+        if (hasService()) {
+            log.cmd(MESSAGES.LOGOUT.ATTEMPT);
+        }
         await service('stopAll', 'stop', index, ...args);
         break;
     }
 
     case locales.en.CLI.COMMANDS.STATUS:
     case locales.ko.CLI.COMMANDS.STATUS: {
-        log.cmd(MESSAGES.STATUS.ATTEMPT);
+        if (hasService()) {
+            log.cmd(MESSAGES.STATUS.ATTEMPT);
+        }
         await service('statusAll', 'status', index, ...args);
         break;
     }
 
     case locales.en.CLI.COMMANDS.REFRESH:
     case locales.ko.CLI.COMMANDS.REFRESH: {
-        log.cmd(MESSAGES.REFRESH.ATTEMPT);
+        if (hasService()) {
+            log.cmd(MESSAGES.REFRESH.ATTEMPT);
+        }
         await service('refreshAll', 'refresh', index, ...args);
         break;
     }
@@ -133,6 +307,9 @@ async function handler(input) {
     case locales.en.CLI.COMMANDS.CLEAR:
     case locales.ko.CLI.COMMANDS.CLEAR: {
         log.clear();
+        pause();
+        await initialize();
+        prompt();
         break;
     }
 
@@ -142,43 +319,47 @@ async function handler(input) {
         break;
     }
 
+    case locales.en.CLI.COMMANDS.REBOOT:
+    case locales.ko.CLI.COMMANDS.REBOOT: {
+        await reboot();
+        break;
+    }
+
     default:
         unknown(cmd);
         break;
     }
 }
 
-async function infoAll(items) {
-    for (const [id, item] of items.entries()) {
-        if (!item.ref) continue;
-        log.prompt(MESSAGES.CLI[item.name]);
-        log.prompt('───────────────────────────────────────\n')
-        for (const [id] of item.ref.get().entries()) {
-            log.prompt(await item.ref.info(id, true));
-        }
-        log.prompt('\n───────────────────────────────────────\n')
-    }
+function select(index) {
+    const selected = indexMenu(
+        services)[index - 1];
+    return selected?.value;
 }
 
-async function showAll(items) {
-    for (const [id, item] of items.entries()) {
-        if (!item.name) continue;
-        const name = MESSAGES.CLI[item.name];
-        log.prompt(`${id}.`, name);
-    }
-}
-
-export async function setup(items) {
-    for (const [id, item] of items.entries()) {
-        if (!item.ref) continue;
-        await item.ref.setup();
-    }
-}
-
-export async function start(items) {
-    services = items;
-    await setup(items);
+async function cancel() {
+    log.warn(MESSAGES.SYSTEM.CANCEL);
     await initialize();
+    prompt();
+}
+
+async function invalid() {
+    log.warn(MESSAGES.SYSTEM.INVALID);
+    await initialize();
+    prompt();
+}
+
+async function done() {
+    showLine();
+    log.cmd(MESSAGES.SYSTEM.DONE);
+    showLine();
+    await initialize();
+    prompt();
+}
+
+export function unknown(cmd) {
+    log.warn(`❓ '${cmd}' `
+        + MESSAGES.SYSTEM.UNKNOWN);
 }
 
 export function prompt() {
@@ -193,12 +374,7 @@ export function close() {
     if (!rl.closed) rl.close();
 }
 
-export function unknown(cmd) {
-    log.warn(`❓ '${cmd}' `
-        + MESSAGES.SYSTEM.UNKNOWN);
-}
-
-export function ask(resolve) {
+export function wait(resolve) {
     return new Promise(resolve);
 }
 
@@ -208,6 +384,13 @@ export async function shutdown() {
         await service.ref?.exitAll?.();
     }; close(); process.exit(0);
 }
+
+rl.on('line', async (input) => {
+    const cmd = input.trim();
+    await handler(cmd);
+});
+
+rl.on('SIGINT', shutdown);
 
 process.on('uncaughtException', (err) => {
     log.error(err?.stack || err);

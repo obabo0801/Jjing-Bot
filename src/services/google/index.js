@@ -15,15 +15,19 @@ export const get = () => sheets;
 
 export function config(name) {
     sheets.clear();
-    const config = file.find(name);
-    if (!config) return;
-    const json = file.json(config);
-    Object.entries(json.googles)
+    const path = file.find(name);
+    if (!path) return;
+    const config = file.json(path);
+    Object.entries(config.googles)
         .forEach(([key, value]) => {
         const sheet = new GoogleSheet();
         sheet.config(value);
         sheets.set(Number(key), sheet);
     });
+}
+
+export async function reload() {
+    config('config.json');
 }
 
 export async function reset(id) {
@@ -37,7 +41,7 @@ export async function reset(id) {
 export async function start(id) {
     const sheet = sheets.get(id);
     if (!sheet) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         sheet.once('start', resolve);
         await sheet.start();
     });
@@ -65,7 +69,7 @@ export async function restartAll() {
 export async function stop(id) {
     const sheet = sheets.get(id);
     if (!sheet) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         sheet.once('stop', resolve);
         await sheet.stop();
     });
@@ -80,7 +84,7 @@ export async function stopAll() {
 export async function refresh(id) {
     const sheet = sheets.get(id);
     if (!sheet) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         sheet.once('refresh', resolve);
         await sheet.refresh();
     });
@@ -101,7 +105,7 @@ export async function exitAll() {
 export async function status(id) {
     const sheet = sheets.get(id);
     if (!sheet) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         sheet.once('status', resolve);
         await sheet.status();
     });
@@ -122,7 +126,7 @@ export async function info(id, show) {
     return(`${i} ${name} ${info}`);
 }
 
-export function ask(resolve) {
+export function wait(resolve) {
     return new Promise(resolve);
 }
 

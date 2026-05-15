@@ -1,13 +1,13 @@
 export const MESSAGES = {
     ENV: {
         SUCCESS: '📄 .env loaded',
-        FAIL: '📄 .env failed',
+        FAIL: '📄 .env load failed',
     },
 
     CLI: {
         ALL: 'All 🍀',
 
-        DISCORD: 'Discord 🎮',
+        DISCORD: 'Discord Bots 🎮',
         GOOGLE: 'Google Sheets 📊',
 
         COMMAND: 'Commands 📝\n',
@@ -19,6 +19,7 @@ export const MESSAGES = {
             STATUS: 'status',
             REFRESH: 'refresh',
             CLEAR: 'clear',
+            REBOOT: 'reboot',
             EXIT: 'exit'
         },
 
@@ -65,7 +66,7 @@ export const MESSAGES = {
         SUCCESS: '⚡ Status check success',
         FAIL: '⚡ Status check failed',
 
-        NOT_RUNNING: '❗ Server not running',
+        NOT_RUNNING: '❗ Service not running',
 
         CONNECTED: '🟢 Connected',
         DISCONNECTED: '🔴 Disconnected',
@@ -130,7 +131,7 @@ export const MESSAGES = {
     LOAD: {
         ATTEMPT: 'Loading...',
 
-        SUCCESS: 'Load success',
+        SUCCESS: 'Loaded',
         FAIL: 'Load failed',
 
         NOT_FOUND: 'Folder not found',
@@ -142,10 +143,16 @@ export const MESSAGES = {
         SUCCESS: '🔃 Refresh success',
         FAIL: '🔃 Refresh failed',
 
-        NOT_RUNNING: '❗ Server not running',
+        NOT_RUNNING: '❗ Service not running',
     },
 
     SYSTEM: {
+        EMPTY: '❗ No services available',
+
+        CANCEL: '📍 Selection cancelled',
+        INVALID: '❗Invalid selection',
+        DONE: '📋 Command completed',
+        
         UNKNOWN: 'is not a valid command',
 
         QUIT: '😢 Exiting program...',

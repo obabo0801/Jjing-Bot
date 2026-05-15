@@ -15,15 +15,19 @@ export const get = () => bots;
 
 export function config(name) {
     bots.clear();
-    const config = file.find(name);
-    if (!config) return;
-    const json = file.json(config);
-    Object.entries(json.bots)
+    const path = file.find(name);
+    if (!path) return;
+    const config = file.json(path);
+    Object.entries(config.discords)
         .forEach(([key, value]) => {
         const bot = new DiscordBot();
         bot.config(value);
         bots.set(Number(key), bot);
     });
+}
+
+export async function reload() {
+    config('config.json');
 }
 
 export async function reset(id) {
@@ -38,7 +42,7 @@ export async function start(id) {
     const bot = bots.get(id);
     if (!bot) return;
 
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         bot.once('start', resolve);
         await bot.start();
     });
@@ -66,12 +70,11 @@ export async function restartAll() {
 export async function stop(id) {
     const bot = bots.get(id);
     if (!bot) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         bot.once('stop', async () => {
             await reset(id);
             resolve();
         });
-        bot.once('stop', resolve);
         await bot.stop();
     });
 }
@@ -85,7 +88,7 @@ export async function stopAll() {
 export async function refresh(id) {
     const bot = bots.get(id);
     if (!bot) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         bot.once('refresh', resolve);
         await bot.refresh();
     });
@@ -106,7 +109,7 @@ export async function exitAll() {
 export async function status(id) {
     const bot = bots.get(id);
     if (!bot) return;
-    await ask(async (resolve) => {
+    await wait(async (resolve) => {
         bot.once('status', resolve);
         await bot.status();
     });
@@ -127,7 +130,7 @@ export async function info(id, show) {
     return(`${i} ${name} ${info}`);
 }
 
-export function ask(resolve) {
+export function wait(resolve) {
     return new Promise(resolve);
 }
 
