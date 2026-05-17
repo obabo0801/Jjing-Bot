@@ -89,13 +89,13 @@ function stringify(data) {
 }
 
 export function strformat(commands, {
-    col = 6, rows = [], join = ' ', line = '\n'
-    } = {}) {
+    first = '', last = '', col = 5,
+    rows = [], join = ' ', line = '\n'} = {}) {
     const v = Object.values(commands);
     for (let i = 0; i < v.length; i += col) {
         rows.push(v.slice(i, i + col).join(join));
     }
-    return rows.join(line);
+    return `${first}${rows.join(line)}${last}`;
 }
 
 export function strtemplate(text, values = {}) {

@@ -1,14 +1,14 @@
 import * as file from '#utils/file';
 
 export const locales = {
-    en : load('./src/_locals/en'),
-    ko : load('./src/_locals/ko')
+    en : load('en'),
+    ko : load('ko')
 }
 
 export let MESSAGES = locales.en;
 
 function load(lang) {
-    const path = file.find(`${lang}.json`);
+    const path = file.find(`./src/_locals/${lang}.json`);
     return path ? file.json(path) : {};
 }
 

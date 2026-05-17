@@ -39,18 +39,19 @@ export class GoogleSheet extends EventEmitter {
                 version: 'v4',
                 auth: this.auth
             });
-            log.load(MESSAGES.AUTH.SUCCESS);
             sheet = await this.isReady();
             if (sheet.ok) {
                 this.#setSheet(sheet.result);
                 log.load(MESSAGES.SHEET.IN_SUCCESS);
+                await this.emit('start');
+                return true;
             } else {
-                this.#undefinedSheet();
+                log.error(MESSAGES.SHEET.IN_FAIL);
+                await this.#handleError(sheet.error);
+                await this.emit('start');
+                return false;
             }
-            await this.emit('start');
-            return true;
         } catch (e) {
-            log.error(MESSAGES.AUTH.FAIL);
             await this.#handleError(e);
             await this.emit('start');
             return false;
@@ -146,6 +147,26 @@ export class GoogleSheet extends EventEmitter {
         }
     }
 
+    async list() {
+        try {
+            let sheet = await this.isReady();
+            this.#printBanner();
+            if (!sheet.ok) {
+                log.warn(MESSAGES.STATUS.NOT_RUNNING);
+                this.emit('list');
+                return false;
+            }
+            log.prompt(log.strformat(this.getSheet(),
+                { first: '', last: '', join: ' | ', col: 5 }));
+            await this.emit('list');
+            return true;
+        } catch (e) {
+            await this.#handleError(e, { show: false });
+            await this.emit('list');
+            return false;
+        }
+    }
+
     getName() {
         return process.env[this.name] || this.name;
     }
@@ -177,8 +198,8 @@ export class GoogleSheet extends EventEmitter {
     }
 
     resolveSheet(name) {
+        if (!this.names) return name;
         const target = this.normalize(name);
-
         return this.names.find(sheet =>
             this.normalize(sheet) === target
         ) ?? this.names.find(sheet =>

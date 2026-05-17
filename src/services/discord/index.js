@@ -12,7 +12,7 @@ export async function setup() {
         return startAll();
     }
     for (const id of ids) {
-        if (!sheets.get(id)) continue;
+        if (!bots.get(id)) continue;
         await start(id);
     }
 }
@@ -134,8 +134,8 @@ export async function info(id, show) {
     return(`${i} ${name} ${info}`);
 }
 
-export function wait(resolve) {
-    return new Promise(resolve);
+export function wait(executor) {
+    return new Promise(executor);
 }
 
 export function index() {

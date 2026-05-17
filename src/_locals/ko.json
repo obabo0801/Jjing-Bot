@@ -13,6 +13,7 @@
         "COMMAND": "명령어 📝\n",
 
         "COMMANDS": {
+            "READ": "읽기",
             "START": "시작",
             "RESTART": "재시작",
             "STOP": "중지",
@@ -33,6 +34,11 @@
         "USERS":  "USERS",
         "SHEETS": "SHEETS",
         "CACHE":  "CACHE"
+    },
+
+    "READ": {
+        "ATTEMPT": "⏰ 읽기를 시도합니다.",
+        "INPUT": "📄 내용을 입력해주세요."
     },
 
     "LOGIN": {

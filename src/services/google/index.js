@@ -42,6 +42,22 @@ export async function reset(id) {
     sheets.set(id, sheet);
 }
 
+export async function list(id) {
+    const sheet = sheets.get(id);
+    if (!sheet) return null;
+    await wait(async (resolve) => {
+        sheet.once('list', resolve);
+        await sheet.list();
+    });
+    
+}
+
+export async function read(id, range = '') {
+    const sheet = sheets.get(id);
+    if (!sheet) return null;
+    return await sheet.get(range);
+}
+
 export async function start(id) {
     const sheet = sheets.get(id);
     if (!sheet) return;
@@ -130,8 +146,8 @@ export async function info(id, show) {
     return(`${i} ${name} ${info}`);
 }
 
-export function wait(resolve) {
-    return new Promise(resolve);
+export function wait(executor) {
+    return new Promise(executor);
 }
 
 export function index() {

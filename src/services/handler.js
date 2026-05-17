@@ -56,13 +56,10 @@ export function clear() {
 
 export function error(error) {
     const errors = [
+        ['ERR_OSSL_UNSUPPORTED', MESSAGES.AUTH.INVALID],
+
         ['ENOTFOUND', MESSAGES.LOGIN.ENOTFOUND],
         ['TokenInvalid', MESSAGES.LOGIN.TOKEN_INVALID],
-        
-        [50001, MESSAGES.COMMAND.MISSING_ACCESS],
-        [50035, MESSAGES.ERROR.BODY_INVALID],
-        [10002, MESSAGES.COMMAND.CLIENT_INVALID],
-        [10004, MESSAGES.GUILD.INVALID],
 
         [400, MESSAGES.SHEET.ERROR400],
         [401, MESSAGES.SHEET.ERROR401],
@@ -70,6 +67,11 @@ export function error(error) {
         [404, MESSAGES.SHEET.ERROR404],
         [423, MESSAGES.SHEET.ERROR423],
         [500, MESSAGES.SHEET.ERROR500],
+
+        [50001, MESSAGES.COMMAND.MISSING_ACCESS],
+        [50035, MESSAGES.ERROR.BODY_INVALID],
+        [10002, MESSAGES.COMMAND.CLIENT_INVALID],
+        [10004, MESSAGES.GUILD.INVALID],
     ];
 
     for (const [code, message] of errors) {

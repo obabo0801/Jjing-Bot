@@ -14,8 +14,7 @@ export class DiscordBot extends Client {
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.Guilds]});
         this.commands = new Map();
-        this.jjing = {path: 'src/commands',
-                        delay: 5, count: 3}
+        this.jjing = {path: 'src/commands'}
         this.#initialize();
     }
 
@@ -381,22 +380,27 @@ export class DiscordBot extends Client {
         return new Promise((resolve) => {
         log.error(MESSAGES.LOGIN.FAIL);
         handler.error(error);
-        if (!this.getCount() || !this.getDelay()) {
+        const count = Number(this.getCount());
+        const delay = Number(this.getDelay());
+        if (Number.isNaN(count) || Number.isNaN(delay) ||
+            count <= 0 || delay <= 0) {
+            resolve();
             return;
         }
-        if (retry >= this.getCount()) {
+        if (retry >= count) {
             log.error(MESSAGES.LOGIN.RETRY_LIMIT);
             resolve();
             return;
         }
         log.warn(log.strtemplate(
             MESSAGES.LOGIN.RETRY_COUNT, {
-            n: this.getDelay(),
+            n: delay,
             r: retry + 1,
-            m: this.getCount()}));
-        setTimeout(() => {
-            this.start(retry + 1);
-        }, this.getDelay() * 1000);
+            m: count}));
+        setTimeout(async () => {
+            await this.start(retry + 1);
+            resolve();
+        }, delay * 1000);
         });
     }
 
