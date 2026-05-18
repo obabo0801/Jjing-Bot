@@ -18,10 +18,10 @@
         "start": "node src/index.js"
     },
     "imports": {
-        "#services/*": "src/services/*.js",
-        "#core/*": "src/core/*.js",
-        "#utils/*": "src/utils/*.js",
-        "#i18n": "src/locals/index.js"
+        "#services/*": "./src/services/*.js",
+        "#core/*": "./src/core/*.js",
+        "#utils/*": "./src/utils/*.js",
+        "#i18n": "./src/locals/index.js"
     },
     "dependencies": {
         "discord.js": "^14.26.4",

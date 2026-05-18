@@ -19,7 +19,8 @@ function isBase64(str) {
     const norm = normalize(str);
     const enc = normalize(
         Buffer.from(str, 'base64')
-        .toString('utf8'));
+        .toString('utf8')
+    );
     
     return norm === enc;
 }

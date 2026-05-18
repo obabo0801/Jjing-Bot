@@ -43,7 +43,8 @@ export function read(name) {
 
 export function dir(name) {
     return fs.readdirSync(get(name),
-        { recursive: true });
+        { recursive: true }
+    );
 }
 
 export function url(route, name) {
@@ -57,7 +58,8 @@ export function write(name, ...args) {
 
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir,
-            { recursive: true });
+            { recursive: true }
+        );
     }
 
     const data = `${args.join(' ')}\n`;
@@ -70,7 +72,8 @@ export function append(name, ...args) {
 
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir,
-            { recursive: true });
+            { recursive: true }
+        );
     }
 
     const data = `${args.join(' ')}\n`;

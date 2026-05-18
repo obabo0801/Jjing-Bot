@@ -4,6 +4,8 @@ import { MESSAGES } from '#i18n';
 import * as handler from '#services/handler';
 import * as log from '#utils/log';
 
+const LINE = '───────────────────────────────────────────────';
+
 export class GoogleSheet extends EventEmitter {
     constructor() { super();
         this.cache = new Map();
@@ -15,15 +17,15 @@ export class GoogleSheet extends EventEmitter {
     config(options = {}) {
         const valid = Object.fromEntries(
             Object.entries(options)
-            .filter(([_, v]) => v !== undefined));
+            .filter(([_, v]) => v !== undefined)
+        );
         Object.assign(this, valid);
     }
 
     async start() {
         try {
             this.#printBanner();
-            let sheet = await this.isReady();
-            if (sheet.ok) {
+            if (this.sheets) {
                 log.warn(MESSAGES.SHEET.RUNNING);
                 this.emit('start');
                 return false;
@@ -39,18 +41,18 @@ export class GoogleSheet extends EventEmitter {
                 version: 'v4',
                 auth: this.auth
             });
-            sheet = await this.isReady();
-            if (sheet.ok) {
-                this.#setSheet(sheet.result);
-                log.load(MESSAGES.SHEET.IN_SUCCESS);
-                await this.emit('start');
-                return true;
-            } else {
+            const sheet = await this.isReady();
+            if (!sheet.ok) {
                 log.error(MESSAGES.SHEET.IN_FAIL);
                 await this.#handleError(sheet.error);
                 await this.emit('start');
                 return false;
             }
+            log.info(this.getTitle(sheet));
+            this.#setSheet(sheet);
+            log.ready(MESSAGES.SHEET.IN_SUCCESS);
+            await this.emit('start');
+            return true;
         } catch (e) {
             await this.#handleError(e);
             await this.emit('start');
@@ -65,9 +67,8 @@ export class GoogleSheet extends EventEmitter {
 
     async stop(skip = false) {
         try {
-            let sheet = await this.isReady();
             if (skip) {
-                if (!sheet.ok) {
+                if (!this.sheets) {
                     this.emit('stop');
                     return false;
                 }
@@ -76,11 +77,12 @@ export class GoogleSheet extends EventEmitter {
                 return true;
             }
             this.#printBanner();
-            if (!sheet.ok) {
+            if (!this.sheets) {
                 log.warn(MESSAGES.SHEET.STOPPED);
                 this.emit('stop');
                 return false;
             }
+            const sheet = await this.isReady();
             this.clear();
             log.load(MESSAGES.SHEET.OUT_SUCCESS);
             await this.emit('stop');
@@ -95,21 +97,24 @@ export class GoogleSheet extends EventEmitter {
 
     async status() {
         try {
-            let sheet = await this.isReady();
             this.#printBanner();
-            if (!sheet.ok) {
+            if (!this.sheets) {
                 log.warn(MESSAGES.STATUS.NOT_RUNNING);
                 this.emit('status');
                 return false;
             }
+            const sheet = await this.isReady();
             log.prompt(MESSAGES.CLI.NAME,
-                sheet.result?.data?.properties?.title);
+                this.getTitle(sheet)
+            );
             log.prompt(MESSAGES.CLI.STATUS,
-                await this.infoStatus());
+                await this.infoStatus(sheet)
+            );
             log.prompt(MESSAGES.CLI.SHEETS,
                 this.getSheet().length);
             log.prompt(MESSAGES.CLI.CACHE,
-                this.cache.size);
+                this.cache.size
+            );
             log.load(MESSAGES.STATUS.SUCCESS);
             await this.emit('status');
             return true;
@@ -123,19 +128,20 @@ export class GoogleSheet extends EventEmitter {
 
     async refresh() {
         try {
-            let sheet = await this.isReady();
             this.#printBanner();
-            if (!sheet.ok) {
+            if (!this.sheets) {
                 log.warn(MESSAGES.SHEET.NOT_RUNNING);
                 this.emit('refresh');
                 return false;
             }
+            const sheet = await this.isReady();
             this.cache.clear();
             this.sheets = google.sheets({
                 version: 'v4',
                 auth: this.auth
             })
-            this.#setSheet(sheet.result);
+            log.info(this.getTitle(sheet));
+            this.#setSheet(sheet);
             log.load(MESSAGES.REFRESH.SUCCESS);
             await this.emit('refresh');
             return true;
@@ -149,15 +155,16 @@ export class GoogleSheet extends EventEmitter {
 
     async list() {
         try {
-            let sheet = await this.isReady();
             this.#printBanner();
-            if (!sheet.ok) {
+            if (!this.sheets) {
                 log.warn(MESSAGES.STATUS.NOT_RUNNING);
                 this.emit('list');
                 return false;
             }
-            log.prompt(log.strformat(this.getSheet(),
-                { first: '', last: '', join: ' | ', col: 5 }));
+            const sheet = await this.isReady();
+            log.list(log.strformat(this.getSheet(),
+                { first: '', last: '', join: ' ', col: 4 })
+            );
             await this.emit('list');
             return true;
         } catch (e) {
@@ -165,6 +172,10 @@ export class GoogleSheet extends EventEmitter {
             await this.emit('list');
             return false;
         }
+    }
+
+    getTitle(sheet) {
+        return sheet?.result?.data?.properties?.title;
     }
 
     getName() {
@@ -184,22 +195,40 @@ export class GoogleSheet extends EventEmitter {
     }
 
     getSheet() {
-        return [...this.names];
+        return this.names.map(
+            (name, index) => `[${index + 1}] ${name}`
+        );
     }
 
-    #setSheet(result) {
-        this.names = result?.data?.sheets
-            ?.map(sheet => sheet.properties?.title)
-            .filter(Boolean) ?? [];
+    #setSheet(sheet) {
+        this.names = (sheet?.result?.data?.sheets
+            ?.map(sheets => sheets.properties?.title)
+            .filter(Boolean) ?? []
+        );
     }
 
     hasSheet(name) {
         return this.names.includes(name);
     }
 
+    async infoStatus(sheet = null) {
+        if (!sheet) {
+            sheet = await this.isReady();
+        }
+        if (sheet?.ok) {
+            return MESSAGES.STATUS.CONNECTED;
+        } else {
+            return MESSAGES.STATUS.DISCONNECTED;
+        }
+    }
+
     resolveSheet(name) {
         if (!this.names) return name;
         const target = this.normalize(name);
+        if (/^\d+$/.test(target)) {
+            const index = Number(target) - 1;
+            return this.names[index] ?? name;
+        }
         return this.names.find(sheet =>
             this.normalize(sheet) === target
         ) ?? this.names.find(sheet =>
@@ -228,15 +257,6 @@ export class GoogleSheet extends EventEmitter {
         const cStart = cRange.split(':')[0];
         const column = cStart.replace(/[0-9]/g, '');
         return `${sName}!${column}${row + 1}`;
-    }
-
-    async infoStatus() {
-        const res = await this.isReady();
-        if (res?.ok) {
-            return MESSAGES.STATUS.CONNECTED;
-        } else {
-            return MESSAGES.STATUS.DISCONNECTED;
-        }
     }
 
     async isReady() {
@@ -364,9 +384,10 @@ export class GoogleSheet extends EventEmitter {
 
     #printBanner(name = this.getName()) {
         if (!name) return;
-        log.prompt('\n───────────────────────────────────────')
+        log.prompt('\n');
+        log.prompt(LINE);
         log.prompt(`${name}`);
-        log.prompt('───────────────────────────────────────')
+        log.prompt(LINE);
     }
 
     async #handleError(e, { restart = true, show = true } = {}) {

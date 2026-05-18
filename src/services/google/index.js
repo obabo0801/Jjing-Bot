@@ -178,21 +178,24 @@ export function index() {
     if (value === undefined) return [-1];
     if (Array.isArray(value))
         return value.map(Number)
-            .filter(n => !Number.isNaN(n));
+            .filter(n => !Number.isNaN(n)
+        );
     const str = String(value).trim();
     if (!str) return [-1];
     if (str.startsWith('[')) {
         try {
             return JSON.parse(str)
                 .map(Number).filter(n =>
-                !Number.isNaN(n));
+                !Number.isNaN(n)
+            );
         } catch (e) {
             return [-1];
         }
     }
     return str.split(/\s+/)
         .map(Number)
-        .filter(n => !Number.isNaN(n));
+        .filter(n => !Number.isNaN(n)
+    );
 }
 
 function parseValues(text = '') {

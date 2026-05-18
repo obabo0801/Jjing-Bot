@@ -7,14 +7,14 @@ import * as log from '#utils/log';
 
 let services = [];
 
-const LINE = '───────────────────────────────────────';
+const LINE = '───────────────────────────────────────────────';
 
 const TITLE = `
-   ▄▄▄    ▄▄▄  ▄▄▄▄▄  ▄▄   ▄   ▄▄▄ 
-     █      █    █    █▀▄  █ ▄▀   ▀
-     █      █    █    █ █▄ █ █   ▄▄
-     █      █    █    █  █ █ █    █
- ▀▄▄▄▀  ▀▄▄▄▀  ▄▄█▄▄  █   ██  ▀▄▄▄▀ 🐕`;
+       ▄▄▄    ▄▄▄  ▄▄▄▄▄  ▄▄   ▄   ▄▄▄ 
+         █      █    █    █▀▄  █ ▄▀   ▀
+         █      █    █    █ █▄ █ █   ▄▄
+         █      █    █    █  █ █ █    █
+     ▀▄▄▄▀  ▀▄▄▄▀  ▄▄█▄▄  █   ██  ▀▄▄▄▀ 🐕`;
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -99,7 +99,8 @@ async function showInfo(items, all = null, zero = false) {
             showZero();
         }
         for (const key of indexInfo(item)) {
-            log.prompt(await item.ref.info(key, true));
+            log.prompt(await item.ref.info(key, true)
+        );
         }
         showLine();
     }
@@ -118,8 +119,11 @@ function showMenu(selected, all = null, zero = false) {
 function showHelp() {
     showLine();
     log.prompt(MESSAGES.CLI.COMMAND);
-    log.prompt(log.strformat(MESSAGES.CLI.COMMANDS,
-        { first: '', last: '', join: ' | ', col: 5 })
+    const commands = Object.values(MESSAGES.CLI.COMMANDS).map(
+        (name, index) => `[${index + 1}] ${name}`
+    );
+    log.list(log.strformat(commands,
+        { first: '', last: '', join: ' ', col: 4 })
     );
     showLine();
 }
@@ -156,7 +160,8 @@ function hasList(item) {
 
 function hasService() {
     return services.some(item =>
-        item.ref && hasList(item));
+        item.ref && hasList(item)
+    );
 }
 
 function indexInfo(item) {
@@ -183,6 +188,7 @@ async function question() {
     const input = await wait(resolve => {
         rl.question('', resolve);
     });
+    log.input(input);
     pause();
     return input.trim();
 }
@@ -410,10 +416,21 @@ async function selectInfo(all, single, index, target) {
     await service(all, single, index, ...args);
 }
 
-async function handler(input) {
-    const [cmd, ...rest] = input.trim().split(/\s+/);
-    switch (cmd.toLowerCase()) {
+function resolveCommand(cmd) {
+    if (!cmd) return cmd;
+    if (/^\d+$/.test(cmd)) {
+        return Object.values(
+            MESSAGES.CLI.COMMANDS
+        )[Number(cmd) - 1] ?? cmd;
+    }
+    return cmd;
+}
 
+async function handler(input) {
+    const [raw, ...rest] = input.trim().split(/\s+/);
+    const cmd = resolveCommand(raw);
+
+    switch (cmd.toLowerCase()) {
     case locales.en.CLI.COMMANDS.READ:
     case locales.ko.CLI.COMMANDS.READ: {
         await textCommand('list', 'read', rest, {
@@ -446,35 +463,40 @@ async function handler(input) {
     case locales.en.CLI.COMMANDS.START:
     case locales.ko.CLI.COMMANDS.START: {
         await numberCommand('startAll', 'start', rest, {
-            attempt: MESSAGES.LOGIN.ATTEMPT});
+            attempt: MESSAGES.LOGIN.ATTEMPT}
+        );
         break;
     }
 
     case locales.en.CLI.COMMANDS.RESTART:
     case locales.ko.CLI.COMMANDS.RESTART: {
         await numberCommand('restartAll', 'restart', rest, {
-            attempt: MESSAGES.LOGIN.RESTART});
+            attempt: MESSAGES.LOGIN.RESTART}
+        );
         break;
     }
 
     case locales.en.CLI.COMMANDS.STOP:
     case locales.ko.CLI.COMMANDS.STOP: {
         await numberCommand('stopAll', 'stop', rest, {
-            attempt: MESSAGES.LOGOUT.ATTEMPT});
+            attempt: MESSAGES.LOGOUT.ATTEMPT}
+        );
         break;
     }
 
     case locales.en.CLI.COMMANDS.STATUS:
     case locales.ko.CLI.COMMANDS.STATUS: {
         await numberCommand('statusAll', 'status', rest, {
-            attempt: MESSAGES.STATUS.ATTEMPT});
+            attempt: MESSAGES.STATUS.ATTEMPT}
+        );
         break;
     }
 
     case locales.en.CLI.COMMANDS.REFRESH:
     case locales.ko.CLI.COMMANDS.REFRESH: {
         await numberCommand('refreshAll', 'refresh', rest, {
-            attempt: MESSAGES.REFRESH.ATTEMPT});
+            attempt: MESSAGES.REFRESH.ATTEMPT}
+        );
         break;
     }
 
@@ -568,6 +590,7 @@ export function wait(executor) {
 
 rl.on('line', async (input) => {
     const cmd = input.trim();
+    log.input(input);
     if (!cmd) {
         prompt();
         return;

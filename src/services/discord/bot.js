@@ -7,12 +7,14 @@ import * as file from '#utils/file';
 import * as log from '#utils/log';
 import { uptime } from '#utils/time';
 
+const LINE = '───────────────────────────────────────────────';
+
 export class DiscordBot extends Client {
 
     constructor() { super({ intents: [
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.Guilds]});
+        GatewayIntentBits.Guilds] });
         this.commands = new Map();
         this.jjing = {path: 'src/commands'}
         this.#initialize();
@@ -33,7 +35,8 @@ export class DiscordBot extends Client {
     config(options = {}) {
         const valid = Object.fromEntries(
             Object.entries(options)
-            .filter(([_, v]) => v !== undefined));
+            .filter(([_, v]) => v !== undefined)
+        );
         Object.assign(this.jjing, valid);
     }
 
@@ -44,7 +47,8 @@ export class DiscordBot extends Client {
                 path = this.getPath();
             }
             js = file.dir(path).filter(file =>
-                file.endsWith('.js'));
+                file.endsWith('.js')
+            );
         } catch (e) {
             log.error('❌', String(path),
                 MESSAGES.LOAD.NOT_FOUND);
@@ -60,15 +64,20 @@ export class DiscordBot extends Client {
             try {
                 const url = file.url(path, name);
                 const mod = await import(
-                    `${url}?v=${Date.now()}`);
+                    `${url}?v=${Date.now()}`
+                );
                 if (!mod.default) continue;
                 mod.default.events?.();
                 this.#register(mod.default);
-                log.load('📄', name,
-                    MESSAGES.LOAD.SUCCESS);
+                log.load('📄',
+                    name.replaceAll('\\', '/'),
+                    MESSAGES.LOAD.SUCCESS
+                );
             } catch (e) {
-                log.error('📄', name,
-                    MESSAGES.LOAD.FAIL);
+                log.error('📄',
+                    name.replaceAll('\\', '/'),
+                    MESSAGES.LOAD.FAIL
+                );
                 handler.error(e);
             }
         }
@@ -89,10 +98,12 @@ export class DiscordBot extends Client {
                 this.#undefinedGuild();
             }
             const rest = new REST({ version: '10' })
-                .setToken(this.#getToken());
+                .setToken(this.#getToken()
+            );
             log.info(MESSAGES.COMMAND.ATTEMPT);
             const body = [...this.commands.values()]
-                .map(cmd => cmd.toJSON());
+                .map(cmd => cmd.toJSON()
+            );
             await rest.put(
                 Routes.applicationGuildCommands(
                     this.getClientId(),
@@ -168,7 +179,8 @@ export class DiscordBot extends Client {
     async isGlobal() {
         try {
             const rest = new REST({ version: '10' })
-                .setToken(this.#getToken());
+                .setToken(this.#getToken()
+            );
             if (!this.getClientId()) {
                 return false;
             }
@@ -195,7 +207,8 @@ export class DiscordBot extends Client {
     async isGuild() {
         try {
             const rest = new REST({ version: '10' })
-                .setToken(this.#getToken());
+                .setToken(this.#getToken()
+            );
             if (!this.getGuildId()) {
                 return false;
             }
@@ -221,7 +234,7 @@ export class DiscordBot extends Client {
     
     async #changeStatus(status) {
         if (!status) return;
-        this.user?.setPresence({status});
+        this.user?.setPresence({ status });
         log.info(await this.infoStatus());
     }
 
@@ -242,13 +255,13 @@ export class DiscordBot extends Client {
 
     async ready() {
         this.#printBanner(this.getName());
-        log.load(MESSAGES.LOGIN.SUCCESS);
         log.info('👤', this.user.tag);
         await this.#changeStatus(this.getStatus())
         await this.#printGuild(this.getGuildId());
         await this.loadScripts(this.getPath());
         await this.deployCommands();
         await this.emit('start');
+        log.ready(MESSAGES.LOGIN.SUCCESS);
     }
 
     async start(retry = 0) {
@@ -317,23 +330,31 @@ export class DiscordBot extends Client {
                 return false;
             }
             log.prompt(MESSAGES.CLI.NAME,
-                await this.getTag());
+                await this.getTag()
+            );
             log.prompt(MESSAGES.CLI.STATUS,
-                await this.infoStatus());
+                await this.infoStatus()
+            );
             log.prompt(MESSAGES.CLI.GLOBAL,
-                await this.getGlobal());
+                await this.getGlobal()
+            );
             log.prompt(MESSAGES.CLI.GUILD,
-                await this.getGuild());
+                await this.getGuild()
+            );
             log.prompt(MESSAGES.CLI.PING,
-                `${this.ws?.ping}ms`);
+                `${this.ws?.ping}ms`
+            );
             log.prompt(MESSAGES.CLI.UPTIME, 
-                uptime(await this.uptime));
+                uptime(await this.uptime)
+            );
             log.prompt(MESSAGES.CLI.GUILDS,
-                this.guilds?.cache?.size);
+                this.guilds?.cache?.size
+            );
             log.prompt(MESSAGES.CLI.USERS,
                 this.guilds?.cache?.reduce(
                 (a, g) => a + g.memberCount,
-                0) || 0);
+                0) || 0
+            );
             log.load(MESSAGES.STATUS.SUCCESS);
             await this.emit('status');
             return true;
@@ -371,9 +392,10 @@ export class DiscordBot extends Client {
     
     #printBanner(name = this.getName()) {
         if (!name) return;
-        log.prompt('\n───────────────────────────────────────')
+        log.prompt('\n');
+        log.prompt(LINE);
         log.prompt(`${name}`);
-        log.prompt('───────────────────────────────────────')
+        log.prompt(LINE);
     }
 
     #errorStart(error, retry) {
@@ -396,7 +418,8 @@ export class DiscordBot extends Client {
             MESSAGES.LOGIN.RETRY_COUNT, {
             n: delay,
             r: retry + 1,
-            m: count}));
+            m: count})
+        );
         setTimeout(async () => {
             await this.start(retry + 1);
             resolve();
